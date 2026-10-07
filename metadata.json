@@ -1,0 +1,6 @@
+{
+  "name": "GreenBDG MVP Sprint Command Center",
+  "description": "Interactive multi-dimensional sprint intelligence board and SDLC command center for the 10-week GreenBDG MVP Delivery Plan (Proposal V1.3 & Pareto Energy Intelligence alignment).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
