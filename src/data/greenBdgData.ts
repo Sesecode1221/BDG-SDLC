@@ -19,11 +19,8 @@ export type BackendService =
   | 'Channel'
   | 'Report';
 
-export type TicketStatus = 'Not Started' | 'In Progress' | 'Complete';
 export type RiskSeverity = 'Low' | 'Medium' | 'High';
 export type DependencyStatus = 'Met' | 'Pending' | 'Blocked';
-export type MilestoneStatus = 'Pending' | 'In Progress' | 'Complete';
-export type RoleView = 'Technical' | 'Stakeholder' | 'Executive';
 
 export interface Ticket {
   id: string;
@@ -37,9 +34,6 @@ export interface Ticket {
   dependencies: string[];
   risks: string[];
   riskLevel: RiskSeverity;
-  effortDays: number;
-  status: TicketStatus;
-  owner: string;
 }
 
 export interface RiskItem {
@@ -50,7 +44,6 @@ export interface RiskItem {
   impact: RiskSeverity;
   affectedTickets: string[];
   mitigation: string;
-  owner: string;
 }
 
 export interface DependencyItem {
@@ -72,7 +65,6 @@ export interface Sprint {
   weeks: string;
   startWeek: number;
   endWeek: number;
-  dateRange: string;
   color: string;
   tickets: Ticket[];
   backendServices: BackendService[];
@@ -82,49 +74,27 @@ export interface Sprint {
   dependencies: string[];
   risks: string[];
   definitionOfDone: string;
-  capacityPoints: number;
 }
 
 export interface Milestone {
   id: string;
+  step: number;
   name: string;
+  shortName: string;
   trigger: string;
-  sprintBoundary: number; // 0 = start S1, 1 = end S1, ..., 5 = end S5, 6 = UAT start, 7 = UAT sign-off
-  weekNumber: number;
-  targetDate: string;
-  status: MilestoneStatus;
+  sprintBoundary: string;
   iconType: 'circle' | 'diamond' | 'flag';
 }
 
-export interface ProgressUpdate {
+export interface ScopeClassificationExample {
   id: string;
-  sprintAndDay: string;
-  timestamp: string;
-  completedSinceLast: string[];
-  inProgress: string[];
-  plannedBeforeNext: string[];
-  blockersAndDecisions: string[];
-  riskStatus: 'Green' | 'Amber' | 'Red';
-  riskExplanation: string;
-  demoLinkOrNotes: string;
-}
-
-export interface ScopeChangeRequest {
-  id: string;
-  title: string;
-  requestedBy: string;
-  date: string;
-  classification: 'Already Included in MVP' | 'Approved MVP Change' | 'Future-Phase Requirement';
-  estimatedDaysImpact: number;
-  targetSprint: string;
-  rationale: string;
-}
-
-export interface InfraMatrixRow {
-  component: string;
-  category: string;
-  sprints: string[];
-  description: string;
+  category: 'Already in Baseline' | 'Approved MVP Change' | 'Future Phase';
+  ruleDescription: string;
+  items: {
+    title: string;
+    reference: string;
+    note: string;
+  }[];
 }
 
 export const WORKSTREAMS: Workstream[] = [
@@ -151,25 +121,117 @@ export const BACKEND_SERVICES: BackendService[] = [
 ];
 
 export const INFRASTRUCTURE_MATRIX: {
+  id: string;
   component: string;
   sprints: string[];
   category: string;
+  architecturalRole: string;
 }[] = [
-  { component: 'AWS Landing Zone – South Africa region', sprints: ['S1'], category: 'Cloud Foundation' },
-  { component: 'RDS PostgreSQL / TimescaleDB', sprints: ['S1', 'S5'], category: 'Database Engine' },
-  { component: 'S3 Object Storage & Upload Processing', sprints: ['S1', 'S2', 'S3', 'S4', 'S5'], category: 'Storage' },
-  { component: 'API Gateway', sprints: ['S1', 'S3', 'S4', 'S5'], category: 'Networking & API' },
-  { component: 'WAF (Web Application Firewall)', sprints: ['S1', 'S3', 'S4', 'S5'], category: 'Security' },
-  { component: 'Development Environment', sprints: ['S1'], category: 'Environment' },
-  { component: 'Security and POPIA Controls', sprints: ['S1', 'S2', 'S5'], category: 'Compliance' },
-  { component: 'Monitoring, Logging and Alerting', sprints: ['S2', 'S3', 'S4', 'S5'], category: 'Observability' },
-  { component: 'File Processing Pipeline', sprints: ['S2'], category: 'Data Pipeline' },
-  { component: 'Database Persistence Layer', sprints: ['S2'], category: 'Database Engine' },
-  { component: 'Database Data Processing', sprints: ['S3', 'S4'], category: 'Data Pipeline' },
-  { component: 'AWS Application Environment', sprints: ['S4'], category: 'Environment' },
-  { component: 'AWS Production-Readiness Checks', sprints: ['S5'], category: 'Release Readiness' },
-  { component: 'Deployment and Environment Checks', sprints: ['S5'], category: 'CI/CD & DevOps' },
-  { component: 'UAT Environment', sprints: ['S5'], category: 'Environment' },
+  {
+    id: 'INF-01',
+    component: 'AWS Landing Zone – South Africa region (af-south-1)',
+    sprints: ['S1'],
+    category: 'Cloud Foundation',
+    architecturalRole: 'Sovereign South African cloud tenancy, VPC networking, and account structure',
+  },
+  {
+    id: 'INF-02',
+    component: 'RDS PostgreSQL / TimescaleDB',
+    sprints: ['S1', 'S5'],
+    category: 'Database & Time-Series',
+    architecturalRole: 'Relational core + time-series hypertables for utility, IoT, and predictive analytics',
+  },
+  {
+    id: 'INF-03',
+    component: 'S3 Object Storage & Upload Processing',
+    sprints: ['S1', 'S2', 'S3', 'S4', 'S5'],
+    category: 'Storage & Ingestion',
+    architecturalRole: 'Secure bucket storage for CSV/XLSX utility batches, EPC certificates, and ISO evidence',
+  },
+  {
+    id: 'INF-04',
+    component: 'API Gateway',
+    sprints: ['S1', 'S3', 'S4', 'S5'],
+    category: 'API & Routing',
+    architecturalRole: 'Unified REST/HTTP gateway routing requests across the 9 backend microservices',
+  },
+  {
+    id: 'INF-05',
+    component: 'WAF (Web Application Firewall)',
+    sprints: ['S1', 'S3', 'S4', 'S5'],
+    category: 'Edge Security',
+    architecturalRole: 'OWASP perimeter protection, rate limiting, and endpoint shielding',
+  },
+  {
+    id: 'INF-06',
+    component: 'Development Environment',
+    sprints: ['S1'],
+    category: 'Environment',
+    architecturalRole: 'Baseline Dev deployment target for continuous sprint demonstrations',
+  },
+  {
+    id: 'INF-07',
+    component: 'Initial Security and POPIA Controls',
+    sprints: ['S1', 'S2'],
+    category: 'Compliance & Governance',
+    architecturalRole: 'Role-based access boundaries, data privacy encryption, and audit logging',
+  },
+  {
+    id: 'INF-08',
+    component: 'Monitoring, Logging and Alerting',
+    sprints: ['S2', 'S3', 'S4', 'S5'],
+    category: 'Observability',
+    architecturalRole: 'CloudWatch telemetry, upload pipeline logs, and operational threshold alerts',
+  },
+  {
+    id: 'INF-09',
+    component: 'File Processing Pipeline',
+    sprints: ['S2'],
+    category: 'Data Pipeline',
+    architecturalRole: 'Automated parsing and schema validation for CSV/XLSX facility and staff uploads',
+  },
+  {
+    id: 'INF-10',
+    component: 'Database Persistence Layer',
+    sprints: ['S2'],
+    category: 'Database & Time-Series',
+    architecturalRole: 'Permanent transactional storage for buildings, staff, documents, and batch records',
+  },
+  {
+    id: 'INF-11',
+    component: 'Database Data Processing',
+    sprints: ['S3', 'S4'],
+    category: 'Data Pipeline',
+    architecturalRole: 'Aggregation queries for EPC distribution, carbon by region, water balance, and fuel reconciliation',
+  },
+  {
+    id: 'INF-12',
+    component: 'AWS Application Environment',
+    sprints: ['S4'],
+    category: 'Environment',
+    architecturalRole: 'Scaled compute and messaging runtime for energy intelligence, fault logging, and notifications',
+  },
+  {
+    id: 'INF-13',
+    component: 'AWS Production-Readiness & Security/POPIA Final Checks',
+    sprints: ['S5'],
+    category: 'Compliance & Governance',
+    architecturalRole: 'Final security hardening, POPIA compliance verification, and infrastructure audit',
+  },
+  {
+    id: 'INF-14',
+    component: 'Deployment and Environment Checks',
+    sprints: ['S5'],
+    category: 'CI/CD & Release',
+    architecturalRole: 'End-to-end release pipeline verification and cross-service integration validation',
+  },
+  {
+    id: 'INF-15',
+    component: 'UAT Environment',
+    sprints: ['S5'],
+    category: 'Environment',
+    architecturalRole: 'Dedicated stakeholder acceptance testing environment with seeded UAT users and test data',
+  },
 ];
 
 export const INITIAL_SPRINTS: Sprint[] = [
@@ -178,14 +240,12 @@ export const INITIAL_SPRINTS: Sprint[] = [
     number: 1,
     name: 'Sprint 1',
     theme: 'Foundation, Authentication and AWS Setup',
-    shortTheme: 'Foundation',
+    shortTheme: 'Foundation & AWS',
     duration: '2 weeks',
     weeks: 'Weeks 1–2',
     startWeek: 1,
     endWeek: 2,
-    dateRange: 'Weeks 1–2 (Days 1–10)',
     color: '#3182CE',
-    capacityPoints: 30,
     backendServices: [
       'Authentication',
       'Customer Data',
@@ -235,9 +295,6 @@ export const INITIAL_SPRINTS: Sprint[] = [
         dependencies: ['Approved MVP Proposal V1.3', 'Initial business/user information'],
         risks: ['Unclear requirements or business rules'],
         riskLevel: 'Medium',
-        effortDays: 4,
-        status: 'Complete',
-        owner: 'Lead Architect / PM',
       },
       {
         id: 'S1-T02',
@@ -252,9 +309,6 @@ export const INITIAL_SPRINTS: Sprint[] = [
         dependencies: ['Approved MVP Proposal V1.3', 'Initial business/user information'],
         risks: ['Unclear requirements or business rules'],
         riskLevel: 'Medium',
-        effortDays: 5,
-        status: 'Complete',
-        owner: 'Full-Stack Security Lead',
       },
       {
         id: 'S1-T03',
@@ -267,9 +321,6 @@ export const INITIAL_SPRINTS: Sprint[] = [
         dependencies: ['Initial business/user information'],
         risks: ['Unclear requirements or business rules'],
         riskLevel: 'Low',
-        effortDays: 4,
-        status: 'Complete',
-        owner: 'Frontend / Workflow Engineer',
       },
       {
         id: 'S1-T04',
@@ -290,9 +341,6 @@ export const INITIAL_SPRINTS: Sprint[] = [
         dependencies: ['AWS account/access', 'Required domain/environment information'],
         risks: ['AWS access not available on time'],
         riskLevel: 'High',
-        effortDays: 6,
-        status: 'Complete',
-        owner: 'Cloud / DevOps Architect',
       },
       {
         id: 'S1-T05',
@@ -306,9 +354,6 @@ export const INITIAL_SPRINTS: Sprint[] = [
         dependencies: ['AWS account/access', 'Approved MVP Proposal V1.3'],
         risks: ['Database architecture decision delayed', 'AWS access not available on time'],
         riskLevel: 'High',
-        effortDays: 5,
-        status: 'In Progress',
-        owner: 'Database / Data Engineer',
       },
       {
         id: 'S1-T06',
@@ -332,9 +377,6 @@ export const INITIAL_SPRINTS: Sprint[] = [
         dependencies: ['Approved MVP Proposal V1.3', 'AWS account/access'],
         risks: ['Database architecture decision delayed'],
         riskLevel: 'Medium',
-        effortDays: 6,
-        status: 'In Progress',
-        owner: 'Backend Systems Lead',
       },
     ],
   },
@@ -343,14 +385,12 @@ export const INITIAL_SPRINTS: Sprint[] = [
     number: 2,
     name: 'Sprint 2',
     theme: 'Administration, Building, Staff and Data Management',
-    shortTheme: 'Administration',
+    shortTheme: 'Admin & Data Mgmt',
     duration: '2 weeks',
     weeks: 'Weeks 3–4',
     startWeek: 3,
     endWeek: 4,
-    dateRange: 'Weeks 3–4 (Days 11–20)',
     color: '#38A169',
-    capacityPoints: 30,
     backendServices: ['Customer Data', 'BatchData', 'Document', 'Workflow', 'Channel'],
     infrastructure: [
       'S3 upload processing',
@@ -388,9 +428,6 @@ export const INITIAL_SPRINTS: Sprint[] = [
         dependencies: ['Staff data'],
         risks: ['Upload requirements not clearly defined'],
         riskLevel: 'Low',
-        effortDays: 4,
-        status: 'Not Started',
-        owner: 'Frontend / Backend Engineer',
       },
       {
         id: 'S2-T02',
@@ -403,9 +440,6 @@ export const INITIAL_SPRINTS: Sprint[] = [
         dependencies: ['Building data'],
         risks: ['Poor or incomplete source data'],
         riskLevel: 'Medium',
-        effortDays: 5,
-        status: 'Not Started',
-        owner: 'Full-Stack Engineer',
       },
       {
         id: 'S2-T03',
@@ -418,9 +452,6 @@ export const INITIAL_SPRINTS: Sprint[] = [
         dependencies: ['Staff data', 'Data-upload templates'],
         risks: ['Poor or incomplete source data'],
         riskLevel: 'Medium',
-        effortDays: 5,
-        status: 'Not Started',
-        owner: 'Backend / Platform Engineer',
       },
       {
         id: 'S2-T04',
@@ -433,9 +464,6 @@ export const INITIAL_SPRINTS: Sprint[] = [
         dependencies: ['Data-upload templates', 'Test data'],
         risks: ['Upload requirements not clearly defined', 'Missing test data'],
         riskLevel: 'High',
-        effortDays: 6,
-        status: 'Not Started',
-        owner: 'Data Pipeline Engineer',
       },
       {
         id: 'S2-T05',
@@ -448,9 +476,6 @@ export const INITIAL_SPRINTS: Sprint[] = [
         dependencies: ['Required document examples'],
         risks: ['Upload requirements not clearly defined'],
         riskLevel: 'Low',
-        effortDays: 5,
-        status: 'Not Started',
-        owner: 'Backend / Cloud Engineer',
       },
       {
         id: 'S2-T06',
@@ -463,9 +488,6 @@ export const INITIAL_SPRINTS: Sprint[] = [
         dependencies: ['Building data', 'Test data'],
         risks: ['Poor or incomplete source data', 'Missing test data'],
         riskLevel: 'Medium',
-        effortDays: 5,
-        status: 'Not Started',
-        owner: 'Database Engineer',
       },
     ],
   },
@@ -479,9 +501,7 @@ export const INITIAL_SPRINTS: Sprint[] = [
     weeks: 'Weeks 5–6',
     startWeek: 5,
     endWeek: 6,
-    dateRange: 'Weeks 5–6 (Days 21–30)',
     color: '#805AD5',
-    capacityPoints: 34,
     backendServices: ['Authentication', 'Customer Data', 'BatchData', 'Workflow', 'Report'],
     infrastructure: [
       'Database data processing',
@@ -521,9 +541,6 @@ export const INITIAL_SPRINTS: Sprint[] = [
         dependencies: ['Building information', 'Approved calculation rules'],
         risks: ['Missing calculation rules'],
         riskLevel: 'Medium',
-        effortDays: 6,
-        status: 'Not Started',
-        owner: 'Senior Frontend Engineer',
       },
       {
         id: 'S3-T02',
@@ -536,9 +553,6 @@ export const INITIAL_SPRINTS: Sprint[] = [
         dependencies: ['EPC data', 'Building information', 'Approved calculation rules'],
         risks: ['Data quality problems', 'Missing calculation rules'],
         riskLevel: 'Medium',
-        effortDays: 4,
-        status: 'Not Started',
-        owner: 'Frontend / Data Visualization Dev',
       },
       {
         id: 'S3-T03',
@@ -551,9 +565,6 @@ export const INITIAL_SPRINTS: Sprint[] = [
         dependencies: ['Electricity data', 'Gas/diesel data', 'Approved calculation rules'],
         risks: ['Data quality problems'],
         riskLevel: 'Medium',
-        effortDays: 5,
-        status: 'Not Started',
-        owner: 'Full-Stack Analytics Dev',
       },
       {
         id: 'S3-T04',
@@ -566,9 +577,6 @@ export const INITIAL_SPRINTS: Sprint[] = [
         dependencies: ['Electricity data', 'Gas/diesel data', 'Emission factors where required', 'Approved calculation rules'],
         risks: ['Missing or incorrect emission factors', 'Missing calculation rules'],
         riskLevel: 'High',
-        effortDays: 5,
-        status: 'Not Started',
-        owner: 'ESG Calculation Engineer',
       },
       {
         id: 'S3-T05',
@@ -581,9 +589,6 @@ export const INITIAL_SPRINTS: Sprint[] = [
         dependencies: ['Building information', 'Electricity data', 'Water data', 'Approved calculation rules'],
         risks: ['Missing calculation rules', 'Data quality problems'],
         riskLevel: 'High',
-        effortDays: 5,
-        status: 'Not Started',
-        owner: 'Full-Stack Analytics Dev',
       },
       {
         id: 'S3-T06',
@@ -596,9 +601,6 @@ export const INITIAL_SPRINTS: Sprint[] = [
         dependencies: ['Building information'],
         risks: ['Data quality problems'],
         riskLevel: 'Low',
-        effortDays: 4,
-        status: 'Not Started',
-        owner: 'Frontend / Auth Engineer',
       },
       {
         id: 'S3-T07',
@@ -619,9 +621,6 @@ export const INITIAL_SPRINTS: Sprint[] = [
         dependencies: ['Electricity data', 'Water data', 'Gas/diesel data', 'EPC data'],
         risks: ['Data quality problems'],
         riskLevel: 'High',
-        effortDays: 5,
-        status: 'Not Started',
-        owner: 'Data Pipeline Engineer',
       },
     ],
   },
@@ -635,9 +634,7 @@ export const INITIAL_SPRINTS: Sprint[] = [
     weeks: 'Weeks 7–8',
     startWeek: 7,
     endWeek: 8,
-    dateRange: 'Weeks 7–8 (Days 31–40)',
     color: '#DD6B20',
-    capacityPoints: 34,
     backendServices: ['Customer Data', 'Fault', 'Asset', 'Workflow', 'Channel', 'Report'],
     infrastructure: [
       'AWS application environment',
@@ -678,9 +675,6 @@ export const INITIAL_SPRINTS: Sprint[] = [
         dependencies: ['Alert rules'],
         risks: ['Calculation rules may require stakeholder clarification'],
         riskLevel: 'Medium',
-        effortDays: 6,
-        status: 'Not Started',
-        owner: 'Energy Analytics Lead',
       },
       {
         id: 'S4-T02',
@@ -693,9 +687,6 @@ export const INITIAL_SPRINTS: Sprint[] = [
         dependencies: ['Service/maintenance information'],
         risks: ['Additional alert requirements could affect sprint capacity'],
         riskLevel: 'Low',
-        effortDays: 5,
-        status: 'Not Started',
-        owner: 'Full-Stack Workflow Dev',
       },
       {
         id: 'S4-T03',
@@ -708,9 +699,6 @@ export const INITIAL_SPRINTS: Sprint[] = [
         dependencies: ['Asset data', 'Service/maintenance information'],
         risks: ['Calculation rules may require stakeholder clarification'],
         riskLevel: 'Medium',
-        effortDays: 5,
-        status: 'Not Started',
-        owner: 'Backend / Asset Engineer',
       },
       {
         id: 'S4-T04',
@@ -723,9 +711,6 @@ export const INITIAL_SPRINTS: Sprint[] = [
         dependencies: ['Alert rules', 'Service/maintenance information'],
         risks: ['Additional alert requirements could affect sprint capacity'],
         riskLevel: 'High',
-        effortDays: 5,
-        status: 'Not Started',
-        owner: 'Platform / Alerting Dev',
       },
       {
         id: 'S4-T05',
@@ -738,9 +723,6 @@ export const INITIAL_SPRINTS: Sprint[] = [
         dependencies: ['Alert rules'],
         risks: ['Additional alert requirements could affect sprint capacity'],
         riskLevel: 'Medium',
-        effortDays: 4,
-        status: 'Not Started',
-        owner: 'Backend Messaging Dev',
       },
       {
         id: 'S4-T06',
@@ -754,9 +736,6 @@ export const INITIAL_SPRINTS: Sprint[] = [
         dependencies: ['Water data', 'Approved water-balance rules'],
         risks: ['Water or fuel data may be incomplete', 'Calculation rules may require stakeholder clarification'],
         riskLevel: 'High',
-        effortDays: 5,
-        status: 'Not Started',
-        owner: 'ESG Calculation Engineer',
       },
       {
         id: 'S4-T07',
@@ -770,9 +749,6 @@ export const INITIAL_SPRINTS: Sprint[] = [
         dependencies: ['Fuel data', 'Approved fuel-reconciliation rules'],
         risks: ['Water or fuel data may be incomplete', 'Calculation rules may require stakeholder clarification'],
         riskLevel: 'High',
-        effortDays: 4,
-        status: 'Not Started',
-        owner: 'ESG Calculation Engineer',
       },
     ],
   },
@@ -781,14 +757,12 @@ export const INITIAL_SPRINTS: Sprint[] = [
     number: 5,
     name: 'Sprint 5',
     theme: 'AI, IoT Readiness, ISO Alignment and MVP Completion',
-    shortTheme: 'AI & Completion',
+    shortTheme: 'AI, IoT & Completion',
     duration: '2 weeks',
     weeks: 'Weeks 9–10',
     startWeek: 9,
     endWeek: 10,
-    dateRange: 'Weeks 9–10 (Days 41–50)',
     color: '#E53E3E',
-    capacityPoints: 42,
     backendServices: [
       'Authentication',
       'Customer Data',
@@ -851,9 +825,6 @@ export const INITIAL_SPRINTS: Sprint[] = [
         dependencies: ['Historical data for analytics where required', 'AI/analytics requirements'],
         risks: ['Insufficient historical data for AI/predictive analytics'],
         riskLevel: 'High',
-        effortDays: 6,
-        status: 'Not Started',
-        owner: 'Data Science / Backend Lead',
       },
       {
         id: 'S5-T02',
@@ -867,9 +838,6 @@ export const INITIAL_SPRINTS: Sprint[] = [
         dependencies: ['IoT information where applicable'],
         risks: ['IoT integration dependencies'],
         riskLevel: 'High',
-        effortDays: 5,
-        status: 'Not Started',
-        owner: 'IoT / Cloud Architect',
       },
       {
         id: 'S5-T03',
@@ -883,9 +851,6 @@ export const INITIAL_SPRINTS: Sprint[] = [
         dependencies: ['ISO 14001:2026 requirements and evidence expectations'],
         risks: ['Additional ISO requirements'],
         riskLevel: 'Medium',
-        effortDays: 5,
-        status: 'Not Started',
-        owner: 'Compliance / Full-Stack Dev',
       },
       {
         id: 'S5-T04',
@@ -898,9 +863,6 @@ export const INITIAL_SPRINTS: Sprint[] = [
         dependencies: ['Final acceptance criteria'],
         risks: ['Critical defects discovered late in the sprint'],
         riskLevel: 'Low',
-        effortDays: 4,
-        status: 'Not Started',
-        owner: 'Frontend / Backend Dev',
       },
       {
         id: 'S5-T05',
@@ -923,9 +885,6 @@ export const INITIAL_SPRINTS: Sprint[] = [
         dependencies: ['Final acceptance criteria'],
         risks: ['Critical defects discovered late in the sprint'],
         riskLevel: 'Medium',
-        effortDays: 5,
-        status: 'Not Started',
-        owner: 'Lead Systems Architect',
       },
       {
         id: 'S5-T06',
@@ -939,9 +898,6 @@ export const INITIAL_SPRINTS: Sprint[] = [
         dependencies: ['Historical data for analytics where required', 'Final acceptance criteria'],
         risks: ['Critical defects discovered late in the sprint'],
         riskLevel: 'Medium',
-        effortDays: 4,
-        status: 'Not Started',
-        owner: 'QA Lead & ESG Analyst',
       },
       {
         id: 'S5-T07',
@@ -954,9 +910,6 @@ export const INITIAL_SPRINTS: Sprint[] = [
         dependencies: ['Final acceptance criteria'],
         risks: ['Critical defects discovered late in the sprint'],
         riskLevel: 'Medium',
-        effortDays: 4,
-        status: 'Not Started',
-        owner: 'Security & Compliance Officer',
       },
       {
         id: 'S5-T08',
@@ -969,9 +922,6 @@ export const INITIAL_SPRINTS: Sprint[] = [
         dependencies: ['UAT test data', 'Final acceptance criteria'],
         risks: ['Critical defects discovered late in the sprint'],
         riskLevel: 'High',
-        effortDays: 5,
-        status: 'Not Started',
-        owner: 'QA Engineering Team',
       },
       {
         id: 'S5-T09',
@@ -984,9 +934,6 @@ export const INITIAL_SPRINTS: Sprint[] = [
         dependencies: ['UAT users', 'UAT test data', 'Final acceptance criteria'],
         risks: ['Critical defects discovered late in the sprint'],
         riskLevel: 'Medium',
-        effortDays: 4,
-        status: 'Not Started',
-        owner: 'Release Manager / PM',
       },
     ],
   },
@@ -995,82 +942,74 @@ export const INITIAL_SPRINTS: Sprint[] = [
 export const INITIAL_MILESTONES: Milestone[] = [
   {
     id: 'M1',
+    step: 1,
     name: 'MVP Development Start',
-    trigger: 'Start of Sprint 1',
-    sprintBoundary: 0,
-    weekNumber: 1,
-    targetDate: 'Week 1, Day 1',
-    status: 'Complete',
+    shortName: 'MVP Start',
+    trigger: 'Start of Sprint 1 (Week 1)',
+    sprintBoundary: 'S1 Start',
     iconType: 'circle',
   },
   {
     id: 'M2',
+    step: 2,
     name: 'Core Platform Foundation Complete',
-    trigger: 'End of Sprint 1',
-    sprintBoundary: 1,
-    weekNumber: 2,
-    targetDate: 'End of Week 2',
-    status: 'In Progress',
+    shortName: 'Foundation',
+    trigger: 'End of Sprint 1 (Week 2)',
+    sprintBoundary: 'End S1',
     iconType: 'diamond',
   },
   {
     id: 'M3',
+    step: 3,
     name: 'Administration and Data Management Complete',
-    trigger: 'End of Sprint 2',
-    sprintBoundary: 2,
-    weekNumber: 4,
-    targetDate: 'End of Week 4',
-    status: 'Pending',
+    shortName: 'Admin / Data',
+    trigger: 'End of Sprint 2 (Week 4)',
+    sprintBoundary: 'End S2',
     iconType: 'diamond',
   },
   {
     id: 'M4',
+    step: 4,
     name: 'Core User Workflows Complete',
-    trigger: 'End of Sprint 3',
-    sprintBoundary: 3,
-    weekNumber: 6,
-    targetDate: 'End of Week 6',
-    status: 'Pending',
+    shortName: 'User Workflows',
+    trigger: 'End of Sprint 3 (Week 6)',
+    sprintBoundary: 'End S3',
     iconType: 'diamond',
   },
   {
     id: 'M5',
+    step: 5,
     name: 'Energy Intelligence and Operational Features Complete',
-    trigger: 'End of Sprint 4',
-    sprintBoundary: 4,
-    weekNumber: 8,
-    targetDate: 'End of Week 8',
-    status: 'Pending',
+    shortName: 'Energy Intelligence',
+    trigger: 'End of Sprint 4 (Week 8)',
+    sprintBoundary: 'End S4',
     iconType: 'diamond',
   },
   {
     id: 'M6',
+    step: 6,
     name: 'MVP Development Complete',
-    trigger: 'End of Sprint 5',
-    sprintBoundary: 5,
-    weekNumber: 10,
-    targetDate: 'End of Week 10 (2.5 Months Max)',
-    status: 'Pending',
+    shortName: 'MVP Complete',
+    trigger: 'End of Sprint 5 (Week 10 · 2.5 Months Max)',
+    sprintBoundary: 'End S5',
     iconType: 'diamond',
   },
   {
     id: 'M7',
+    step: 7,
     name: 'UAT Start',
+    shortName: 'UAT Start',
     trigger: 'After Sprint 5 and completion of UAT readiness checks',
-    sprintBoundary: 6,
-    weekNumber: 11,
-    targetDate: 'Post-Sprint 5 Readiness',
-    status: 'Pending',
+    sprintBoundary: 'Post-S5',
     iconType: 'circle',
   },
   {
     id: 'M8',
-    name: 'UAT Sign-Off & Target Go-Live',
-    trigger: 'After agreed acceptance criteria & production-readiness approval',
-    sprintBoundary: 7,
-    weekNumber: 11,
-    targetDate: 'Upon UAT Sign-Off',
-    status: 'Pending',
+    step: 8,
+    name: 'UAT Sign-Off',
+    shortName: 'UAT Sign-Off',
+    trigger: 'After agreed acceptance criteria have been successfully completed',
+    sprintBoundary: 'Go-Live',
     iconType: 'flag',
   },
 ];
@@ -1083,8 +1022,7 @@ export const INITIAL_RISKS: RiskItem[] = [
     likelihood: 'Medium',
     impact: 'High',
     affectedTickets: ['S1-T04', 'S1-T05'],
-    mitigation: 'Escalate AWS af-south-1 account provisioning and IAM credentials on Day 1; use local Dockerized PostgreSQL/TimescaleDB for immediate schema dev.',
-    owner: 'Cloud / DevOps Lead',
+    mitigation: 'Provision AWS af-south-1 account and IAM credentials prior to Sprint 1 Day 1; use containerized PostgreSQL/TimescaleDB for immediate local schema work.',
   },
   {
     id: 'R-S1-2',
@@ -1093,8 +1031,7 @@ export const INITIAL_RISKS: RiskItem[] = [
     likelihood: 'Medium',
     impact: 'High',
     affectedTickets: ['S1-T05', 'S1-T06'],
-    mitigation: 'Lock in RDS PostgreSQL + TimescaleDB hypertable design for time-series utility metrics by Sprint 1 Day 3.',
-    owner: 'Database Architect',
+    mitigation: 'Confirm RDS PostgreSQL + TimescaleDB time-series partitioning approach in Week 1.',
   },
   {
     id: 'R-S1-3',
@@ -1103,8 +1040,7 @@ export const INITIAL_RISKS: RiskItem[] = [
     likelihood: 'Low',
     impact: 'Medium',
     affectedTickets: ['S1-T01', 'S1-T02', 'S1-T03'],
-    mitigation: 'Enforce GreenBDG MVP Proposal V1.3 as final baseline; log any ambiguity in Monday/Wednesday/Friday stakeholder blockers.',
-    owner: 'Product Owner / PM',
+    mitigation: 'Enforce GreenBDG MVP Proposal V1.3 as the locked requirements baseline.',
   },
   {
     id: 'R-S2-1',
@@ -1113,8 +1049,7 @@ export const INITIAL_RISKS: RiskItem[] = [
     likelihood: 'High',
     impact: 'High',
     affectedTickets: ['S2-T02', 'S2-T03', 'S2-T06'],
-    mitigation: 'Provide strict CSV/XLSX data-upload templates with automated row-level validation and clear rejection logs.',
-    owner: 'Data Engineering Lead',
+    mitigation: 'Provide standardized CSV/XLSX data-upload templates with strict row-level schema validation.',
   },
   {
     id: 'R-S2-2',
@@ -1123,8 +1058,7 @@ export const INITIAL_RISKS: RiskItem[] = [
     likelihood: 'Medium',
     impact: 'Medium',
     affectedTickets: ['S2-T01', 'S2-T04', 'S2-T05'],
-    mitigation: 'Freeze column definitions and file size/type constraints prior to Sprint 2 kickoff.',
-    owner: 'Business Analyst',
+    mitigation: 'Freeze CSV/XLSX column definitions and document upload constraints before Sprint 2.',
   },
   {
     id: 'R-S2-3',
@@ -1133,8 +1067,7 @@ export const INITIAL_RISKS: RiskItem[] = [
     likelihood: 'Medium',
     impact: 'Medium',
     affectedTickets: ['S2-T04', 'S2-T06'],
-    mitigation: 'Generate synthetic representative South African commercial building datasets if client samples are delayed.',
-    owner: 'QA Lead',
+    mitigation: 'Prepare representative commercial building datasets ahead of Sprint 2 testing.',
   },
   {
     id: 'R-S3-1',
@@ -1143,8 +1076,7 @@ export const INITIAL_RISKS: RiskItem[] = [
     likelihood: 'High',
     impact: 'Medium',
     affectedTickets: ['S3-T02', 'S3-T03', 'S3-T05', 'S3-T06', 'S3-T07'],
-    mitigation: 'Implement pre-ingestion sanitization, unit normalization (kWh, kL, Litres), and duplicate period detection.',
-    owner: 'Data Pipeline Engineer',
+    mitigation: 'Enforce pre-ingestion sanitization and unit normalization (kWh, kL, Litres) on utility uploads.',
   },
   {
     id: 'R-S3-2',
@@ -1153,8 +1085,7 @@ export const INITIAL_RISKS: RiskItem[] = [
     likelihood: 'Medium',
     impact: 'High',
     affectedTickets: ['S3-T01', 'S3-T02', 'S3-T04', 'S3-T05'],
-    mitigation: 'Require formal stakeholder sign-off on EPC grading bands and building performance formulas in Week 4.',
-    owner: 'ESG Domain Lead',
+    mitigation: 'Obtain stakeholder sign-off on EPC grading bands and building intensity formulas prior to Sprint 3.',
   },
   {
     id: 'R-S3-3',
@@ -1163,8 +1094,7 @@ export const INITIAL_RISKS: RiskItem[] = [
     likelihood: 'Low',
     impact: 'High',
     affectedTickets: ['S3-T04'],
-    mitigation: 'Configure parameterized South African grid & fuel emission factors in database with versioned audit trail.',
-    owner: 'ESG Domain Lead',
+    mitigation: 'Parameterize South African grid and fuel emission factors in the database.',
   },
   {
     id: 'R-S4-1',
@@ -1173,8 +1103,7 @@ export const INITIAL_RISKS: RiskItem[] = [
     likelihood: 'High',
     impact: 'High',
     affectedTickets: ['S4-T06', 'S4-T07'],
-    mitigation: 'Support partial-period reconciliation and explicit data-completeness indicators on Pareto Water & Fuel views.',
-    owner: 'Data Pipeline Engineer',
+    mitigation: 'Support partial-period reconciliation and explicit data-completeness indicators.',
   },
   {
     id: 'R-S4-2',
@@ -1183,8 +1112,7 @@ export const INITIAL_RISKS: RiskItem[] = [
     likelihood: 'Medium',
     impact: 'High',
     affectedTickets: ['S4-T01', 'S4-T03', 'S4-T06', 'S4-T07'],
-    mitigation: 'Schedule dedicated Pareto Stakeholder Review rule-verification workshop prior to Sprint 4.',
-    owner: 'Stakeholder / PM',
+    mitigation: 'Confirm Pareto water-balance and fuel-reconciliation calculation rules before Sprint 4.',
   },
   {
     id: 'R-S4-3',
@@ -1193,8 +1121,7 @@ export const INITIAL_RISKS: RiskItem[] = [
     likelihood: 'Medium',
     impact: 'Medium',
     affectedTickets: ['S4-T02', 'S4-T04', 'S4-T05'],
-    mitigation: 'Enforce Section 13 Scope Control: route any non-baseline alert rules to the Change Request Log.',
-    owner: 'Delivery Manager',
+    mitigation: 'Apply Section 13 Scope Lock: defer non-baseline alert rules to Future Phase.',
   },
   {
     id: 'R-S5-1',
@@ -1203,8 +1130,7 @@ export const INITIAL_RISKS: RiskItem[] = [
     likelihood: 'High',
     impact: 'High',
     affectedTickets: ['S5-T01'],
-    mitigation: 'Use baseline statistical anomaly detection and rolling trend forecasting that degrades gracefully on shorter history.',
-    owner: 'Data Science Lead',
+    mitigation: 'Implement statistical anomaly detection and trend forecasting tuned for uploaded MVP datasets.',
   },
   {
     id: 'R-S5-2',
@@ -1213,8 +1139,7 @@ export const INITIAL_RISKS: RiskItem[] = [
     likelihood: 'High',
     impact: 'Medium',
     affectedTickets: ['S5-T02'],
-    mitigation: 'Per MVP plan, build the IoT/smart-meter architecture & ingestion contract first; only enable live device stream where APIs/access are approved.',
-    owner: 'IoT Architect',
+    mitigation: 'Deliver the IoT/smart-meter data architecture foundation; only activate live telemetry where devices/APIs are approved.',
   },
   {
     id: 'R-S5-3',
@@ -1223,8 +1148,7 @@ export const INITIAL_RISKS: RiskItem[] = [
     likelihood: 'Medium',
     impact: 'Medium',
     affectedTickets: ['S5-T03'],
-    mitigation: 'Strictly scope ISO 14001:2026 features to the agreed Pareto Stakeholder Review environmental records & traceability baseline.',
-    owner: 'Compliance Lead',
+    mitigation: 'Bound ISO 14001:2026 scope strictly to the agreed Pareto Stakeholder Review environmental records and traceability.',
   },
   {
     id: 'R-S5-4',
@@ -1233,32 +1157,31 @@ export const INITIAL_RISKS: RiskItem[] = [
     likelihood: 'Medium',
     impact: 'High',
     affectedTickets: ['S5-T04', 'S5-T05', 'S5-T06', 'S5-T07', 'S5-T08', 'S5-T09'],
-    mitigation: 'Run continuous integration testing from Sprint 1 and freeze feature code by Sprint 5 Day 6 for dedicated defect resolution.',
-    owner: 'QA Lead',
+    mitigation: 'Enforce Definition of Done testing across Sprints 1–4 and dedicate S5-T08 to full system defect resolution.',
   },
 ];
 
 export const INITIAL_DEPENDENCIES: DependencyItem[] = [
-  // Sprint 1
+  // Sprint 1 (4)
   { id: 'D-S1-1', sprintId: 'S1', name: 'Approved MVP Proposal V1.3', status: 'Met', stakeholder: 'Executive Sponsor', affectedTickets: ['S1-T01', 'S1-T02', 'S1-T05', 'S1-T06'] },
-  { id: 'D-S1-2', sprintId: 'S1', name: 'AWS account/access (South Africa region)', status: 'Met', stakeholder: 'Client IT / Cloud Admin', affectedTickets: ['S1-T04', 'S1-T05', 'S1-T06'] },
-  { id: 'D-S1-3', sprintId: 'S1', name: 'Required domain/environment information', status: 'Met', stakeholder: 'Client IT', affectedTickets: ['S1-T04'] },
-  { id: 'D-S1-4', sprintId: 'S1', name: 'Initial business/user information', status: 'Met', stakeholder: 'GreenBDG Product Owner', affectedTickets: ['S1-T01', 'S1-T02', 'S1-T03'] },
-  // Sprint 2
+  { id: 'D-S1-2', sprintId: 'S1', name: 'AWS account/access (South Africa region)', status: 'Pending', stakeholder: 'Client IT / Cloud Admin', affectedTickets: ['S1-T04', 'S1-T05', 'S1-T06'] },
+  { id: 'D-S1-3', sprintId: 'S1', name: 'Required domain/environment information', status: 'Pending', stakeholder: 'Client IT', affectedTickets: ['S1-T04'] },
+  { id: 'D-S1-4', sprintId: 'S1', name: 'Initial business/user information', status: 'Pending', stakeholder: 'GreenBDG Product Owner', affectedTickets: ['S1-T01', 'S1-T02', 'S1-T03'] },
+  // Sprint 2 (5)
   { id: 'D-S2-1', sprintId: 'S2', name: 'Building data', status: 'Pending', stakeholder: 'Portfolio Operations', affectedTickets: ['S2-T02', 'S2-T06'] },
   { id: 'D-S2-2', sprintId: 'S2', name: 'Staff data', status: 'Pending', stakeholder: 'HR / Platform Admin', affectedTickets: ['S2-T01', 'S2-T03'] },
   { id: 'D-S2-3', sprintId: 'S2', name: 'Test data', status: 'Pending', stakeholder: 'QA & Operations Team', affectedTickets: ['S2-T04', 'S2-T06'] },
-  { id: 'D-S2-4', sprintId: 'S2', name: 'Required document examples', status: 'Met', stakeholder: 'Compliance / Facility Lead', affectedTickets: ['S2-T05'] },
-  { id: 'D-S2-5', sprintId: 'S2', name: 'Data-upload templates', status: 'Met', stakeholder: 'Technical & Business Team', affectedTickets: ['S2-T03', 'S2-T04'] },
-  // Sprint 3
+  { id: 'D-S2-4', sprintId: 'S2', name: 'Required document examples', status: 'Pending', stakeholder: 'Compliance / Facility Lead', affectedTickets: ['S2-T05'] },
+  { id: 'D-S2-5', sprintId: 'S2', name: 'Data-upload templates', status: 'Pending', stakeholder: 'Technical & Business Team', affectedTickets: ['S2-T03', 'S2-T04'] },
+  // Sprint 3 (7)
   { id: 'D-S3-1', sprintId: 'S3', name: 'Electricity data', status: 'Pending', stakeholder: 'Facility Managers', affectedTickets: ['S3-T03', 'S3-T04', 'S3-T05', 'S3-T07'] },
   { id: 'D-S3-2', sprintId: 'S3', name: 'Water data', status: 'Pending', stakeholder: 'Facility Managers', affectedTickets: ['S3-T05', 'S3-T07'] },
   { id: 'D-S3-3', sprintId: 'S3', name: 'Gas/diesel data', status: 'Pending', stakeholder: 'Facility Managers', affectedTickets: ['S3-T03', 'S3-T04', 'S3-T07'] },
   { id: 'D-S3-4', sprintId: 'S3', name: 'EPC data', status: 'Pending', stakeholder: 'Sustainability Team', affectedTickets: ['S3-T02', 'S3-T07'] },
   { id: 'D-S3-5', sprintId: 'S3', name: 'Building information', status: 'Pending', stakeholder: 'Portfolio Managers', affectedTickets: ['S3-T01', 'S3-T02', 'S3-T05', 'S3-T06'] },
   { id: 'D-S3-6', sprintId: 'S3', name: 'Approved calculation rules', status: 'Pending', stakeholder: 'ESG & Pareto Stakeholders', affectedTickets: ['S3-T01', 'S3-T02', 'S3-T03', 'S3-T04', 'S3-T05'] },
-  { id: 'D-S3-7', sprintId: 'S3', name: 'Emission factors where required', status: 'Met', stakeholder: 'ESG Specialist', affectedTickets: ['S3-T04'] },
-  // Sprint 4
+  { id: 'D-S3-7', sprintId: 'S3', name: 'Emission factors where required', status: 'Pending', stakeholder: 'ESG Specialist', affectedTickets: ['S3-T04'] },
+  // Sprint 4 (7)
   { id: 'D-S4-1', sprintId: 'S4', name: 'Water data (Pareto Water Balance)', status: 'Pending', stakeholder: 'Pareto / Facility Team', affectedTickets: ['S4-T06'] },
   { id: 'D-S4-2', sprintId: 'S4', name: 'Fuel data (Pareto Fuel Reconciliation)', status: 'Blocked', stakeholder: 'Pareto / Facility Team', affectedTickets: ['S4-T07'] },
   { id: 'D-S4-3', sprintId: 'S4', name: 'Asset data', status: 'Pending', stakeholder: 'Facility Engineering', affectedTickets: ['S4-T03'] },
@@ -1266,7 +1189,7 @@ export const INITIAL_DEPENDENCIES: DependencyItem[] = [
   { id: 'D-S4-5', sprintId: 'S4', name: 'Approved water-balance rules', status: 'Pending', stakeholder: 'Pareto Stakeholder Review', affectedTickets: ['S4-T06'] },
   { id: 'D-S4-6', sprintId: 'S4', name: 'Approved fuel-reconciliation rules', status: 'Blocked', stakeholder: 'Pareto Stakeholder Review', affectedTickets: ['S4-T07'] },
   { id: 'D-S4-7', sprintId: 'S4', name: 'Alert rules', status: 'Pending', stakeholder: 'Operations & Portfolio Lead', affectedTickets: ['S4-T01', 'S4-T04', 'S4-T05'] },
-  // Sprint 5
+  // Sprint 5 (5)
   { id: 'D-S5-1', sprintId: 'S5', name: 'Historical data for analytics where required', status: 'Pending', stakeholder: 'Data / Portfolio Team', affectedTickets: ['S5-T01', 'S5-T06'] },
   { id: 'D-S5-2', sprintId: 'S5', name: 'AI/analytics requirements', status: 'Met', stakeholder: 'Product Owner', affectedTickets: ['S5-T01'] },
   { id: 'D-S5-3', sprintId: 'S5', name: 'IoT information where applicable', status: 'Blocked', stakeholder: 'Smart-Meter Vendor / IT', affectedTickets: ['S5-T02'] },
@@ -1274,143 +1197,117 @@ export const INITIAL_DEPENDENCIES: DependencyItem[] = [
   { id: 'D-S5-5', sprintId: 'S5', name: 'UAT users, UAT test data & Final acceptance criteria', status: 'Pending', stakeholder: 'All Stakeholders', affectedTickets: ['S5-T04', 'S5-T05', 'S5-T06', 'S5-T07', 'S5-T08', 'S5-T09'] },
 ];
 
-export const INITIAL_PROGRESS_UPDATES: ProgressUpdate[] = [
+export const SCOPE_LOCK_CLASSIFICATIONS: ScopeClassificationExample[] = [
   {
-    id: 'PU-1',
-    sprintAndDay: 'Sprint 1, Day 8 of 10',
-    timestamp: 'Friday 16:00 SAST',
-    completedSinceLast: [
-      'S1-T01: Confirmed GreenBDG MVP Proposal V1.3 baseline and Pareto Energy Intelligence alignment',
-      'S1-T02: Implemented RBAC authentication structure for Admin, Portfolio Manager, and Facility Manager',
-      'S1-T03: Completed Admin First-Time Setup Foundation workflow',
-      'S1-T04: Provisioned AWS Landing Zone (af-south-1 South Africa), S3 buckets, API Gateway, and WAF rules',
+    id: 'SC-1',
+    category: 'Already in Baseline',
+    ruleDescription:
+      'Requirements defined in GreenBDG MVP Proposal V1.3 and the specifically instructed Pareto Energy Intelligence & Stakeholder Review additions.',
+    items: [
+      {
+        title: 'Pareto Water Balance Functionality',
+        reference: 'Sprint 4 · S4-T06',
+        note: 'Incorporated into baseline from Pareto Stakeholder Review.',
+      },
+      {
+        title: 'Pareto Fuel Reconciliation Functionality',
+        reference: 'Sprint 4 · S4-T07',
+        note: 'Incorporated into baseline from Pareto Stakeholder Review.',
+      },
+      {
+        title: 'ISO 14001:2026 Alignment & Traceability',
+        reference: 'Sprint 5 · S5-T03',
+        note: 'Environmental evidence, records, and traceability included in MVP scope.',
+      },
     ],
-    inProgress: [
-      'S1-T05: Finalizing TimescaleDB hypertable partitioning on RDS PostgreSQL (85% complete)',
-      'S1-T06: Scaffolding microservice contracts for Fault, Asset, Workflow, Channel, and Report services',
-    ],
-    plannedBeforeNext: [
-      'Complete S1-T05 and S1-T06 merge to Dev branch',
-      'Execute Sprint 1 30-minute stakeholder demo and review before Sprint 2 kickoff',
-      'Validate Sprint 2 CSV/XLSX upload templates with stakeholder team',
-    ],
-    blockersAndDecisions: [
-      'Confirmation required on representative Building & Staff test data files for Sprint 2 (S2-T02, S2-T03)',
-      'Stakeholder sign-off on Pareto fuel-reconciliation variance thresholds needed ahead of Sprint 4',
-    ],
-    riskStatus: 'Green',
-    riskExplanation:
-      'Sprint 1 foundation is on schedule; AWS South Africa region and core RBAC are live in Dev.',
-    demoLinkOrNotes: 'Dev Environment Build #104 — Auth, Role Matrix & AWS af-south-1 Landing Zone verified.',
   },
   {
-    id: 'PU-2',
-    sprintAndDay: 'Sprint 1, Day 5 of 10',
-    timestamp: 'Wednesday 16:00 SAST',
-    completedSinceLast: [
-      'S1-T01: Signed off technical foundation architecture and repository structure',
-      'S1-T04: Configured AWS af-south-1 VPC, S3 encryption, and initial POPIA security controls',
+    id: 'SC-2',
+    category: 'Approved MVP Change',
+    ruleDescription:
+      'Any new requirement approved for the MVP after the V1.3 baseline must have its sprint impact assessed so the 10-week (2.5-month) delivery limit remains protected.',
+    items: [
+      {
+        title: 'Formal Scope Impact Assessment Rule',
+        reference: 'Section 1 & Section 13',
+        note: 'The development team is not expected to absorb additional requirements without assessing impact on the agreed 10-week timeline.',
+      },
+      {
+        title: 'Live Smart-Meter Device Integration',
+        reference: 'Sprint 5 · S5-T02',
+        note: 'Only implemented where required devices, APIs, connectivity, and access are available and formally approved.',
+      },
     ],
-    inProgress: [
-      'S1-T02: Role structure implementation for Admin, Portfolio Manager, and Facility Manager',
-      'S1-T03: Admin First-Time Setup UI and API endpoints',
+  },
+  {
+    id: 'SC-3',
+    category: 'Future Phase',
+    ruleDescription:
+      'Capabilities outside the approved 10-week baseline that are deferred post-MVP to protect the 2.5-month delivery ceiling.',
+    items: [
+      {
+        title: 'Advanced AI & Closed-Loop Optimisation',
+        reference: 'Sprint 5 · S5-T01',
+        note: 'MVP includes anomaly detection, consumption trends, and basic forecasting; advanced AI/optimisation is excluded unless specifically approved.',
+      },
+      {
+        title: 'Unapproved Post-Baseline Feature Additions',
+        reference: 'Section 13 Governance',
+        note: 'Routed to Post-MVP Phase 2 backlog to preserve the 5-sprint delivery schedule.',
+      },
     ],
-    plannedBeforeNext: [
-      'Complete authentication token flow and WAF attachment on API Gateway',
-      'Begin RDS PostgreSQL + TimescaleDB schema migration scripts (S1-T05)',
-    ],
-    blockersAndDecisions: [
-      'Final domain SSL certificate DNS validation pending Client IT confirmation',
-    ],
-    riskStatus: 'Amber',
-    riskExplanation:
-      'Database TimescaleDB extension parameter group verification in progress; mitigated via local container testing.',
-    demoLinkOrNotes: 'Architecture walkthrough & IAM role matrix preview shared with technical stakeholders.',
   },
 ];
 
-export const INITIAL_SCOPE_CHANGES: ScopeChangeRequest[] = [
-  {
-    id: 'CR-01',
-    title: 'Pareto Water Balance Inflow/Outflow Analytics (S4-T06)',
-    requestedBy: 'Pareto Stakeholder Review',
-    date: 'Baseline V1.3 Incorporation',
-    classification: 'Already Included in MVP',
-    estimatedDaysImpact: 0,
-    targetSprint: 'S4',
-    rationale: 'Explicitly incorporated into Sprint 4 baseline per Section 1 & Section 6 of the MVP Delivery Plan.',
-  },
-  {
-    id: 'CR-02',
-    title: 'Pareto Fuel Reconciliation & Generator Correlation (S4-T07)',
-    requestedBy: 'Pareto Stakeholder Review',
-    date: 'Baseline V1.3 Incorporation',
-    classification: 'Already Included in MVP',
-    estimatedDaysImpact: 0,
-    targetSprint: 'S4',
-    rationale: 'Explicitly incorporated into Sprint 4 baseline per Section 1 & Section 6 of the MVP Delivery Plan.',
-  },
-  {
-    id: 'CR-03',
-    title: 'ISO 14001:2026 Environmental Evidence & Traceability (S5-T03)',
-    requestedBy: 'Pareto Stakeholder Review',
-    date: 'Baseline V1.3 Incorporation',
-    classification: 'Already Included in MVP',
-    estimatedDaysImpact: 0,
-    targetSprint: 'S5',
-    rationale: 'Incorporated into Sprint 5 baseline within approved MVP scope.',
-  },
-  {
-    id: 'CR-04',
-    title: 'Automated Real-Time HVAC Closed-Loop Autonomous Optimization',
-    requestedBy: 'Future Roadmap Inquiry',
-    date: 'Scope Control Evaluation',
-    classification: 'Future-Phase Requirement',
-    estimatedDaysImpact: 18,
-    targetSprint: 'Post-MVP Phase 2',
-    rationale: 'Section 7 (S5-T01) states advanced AI or optimisation functionality is excluded unless specifically approved to protect the 2.5-month limit.',
-  },
+export const UNIVERSAL_DOD_ITEMS: string[] = [
+  'The agreed functionality has been implemented',
+  'Code has been reviewed and merged',
+  'Required testing has been completed',
+  'The functionality has been deployed to Dev',
+  'Acceptance criteria have been met',
+  'The functionality can be demonstrated',
+  'Known issues are documented',
 ];
 
 export const PM_TOOL_COMPARISON = [
   {
-    feature: 'Multi-dimensional SDLC workstream matrix',
-    greenBdg: 'Native 5x8 visual heatmap with effort & ticket drill-down',
-    genericPm: 'Requires custom fields + manual pivot setup',
+    feature: 'Multi-dimensional SDLC heatmap',
+    greenBdg: 'Native, visual',
+    genericPm: 'Flat lists only',
   },
   {
-    feature: 'Backend services dependency web',
-    greenBdg: 'Interactive 9-service architecture network graph across S1–S5',
-    genericPm: 'Not supported natively',
-  },
-  {
-    feature: 'Sprint capacity vs. scope visualization',
-    greenBdg: 'Built-in dynamic 10-week / 2.5-month timeline lock',
-    genericPm: 'Manual spreadsheet calculations',
-  },
-  {
-    feature: 'Risk heatmap per sprint',
-    greenBdg: 'Interactive Likelihood x Impact bubble matrix with ticket links',
-    genericPm: 'Basic flat text risk fields only',
-  },
-  {
-    feature: 'Dependency chain mapping',
-    greenBdg: 'Cross-sprint input readiness & blocker impact attribution',
-    genericPm: 'Linear task links only',
-  },
-  {
-    feature: 'Role-based intelligence views',
-    greenBdg: 'Instant 1-click switch (Technical / Stakeholder / Executive)',
-    genericPm: 'Requires maintaining separate boards & permissions',
-  },
-  {
-    feature: 'Scope creep impact simulator',
-    greenBdg: 'Live 2.5-month delivery boundary breach calculator',
+    feature: 'Backend service dependency web',
+    greenBdg: 'Interactive static graph',
     genericPm: 'Not supported',
   },
   {
-    feature: 'Progress update feed (Mon/Wed/Fri 16:00)',
-    greenBdg: 'Structured contractual reporting format with live simulation',
-    genericPm: 'Unstructured comments or manual status docs',
+    feature: 'Scope Lock timeline protection',
+    greenBdg: 'Built-in visual',
+    genericPm: 'Manual tracking',
+  },
+  {
+    feature: 'Presentation-first slide deck',
+    greenBdg: 'One-click chapters',
+    genericPm: 'Separate slides needed',
+  },
+  {
+    feature: 'No accounts, no login, instant share',
+    greenBdg: 'Static SPA',
+    genericPm: 'Account-based',
+  },
+  {
+    feature: 'Executive 2-minute overview',
+    greenBdg: 'Designed for it',
+    genericPm: 'Requires setup',
+  },
+  {
+    feature: 'Risk-to-ticket mapping',
+    greenBdg: 'Visual, direct',
+    genericPm: 'Basic fields',
+  },
+  {
+    feature: 'One-time baseline narrative',
+    greenBdg: 'Fixed, clear',
+    genericPm: 'Ongoing updates expected',
   },
 ];
